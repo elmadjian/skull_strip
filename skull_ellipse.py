@@ -161,12 +161,15 @@ def get_lines_horiz(img):
     lx = img.shape[1]-1
     ly = img.shape[0]-1
     x0 = 0
-    y1 = int(ly*0.2)
-    y2 = int(ly*0.4)
-    y3 = int(ly*0.6)
-    y4 = int(ly*0.8)
-    x_list = [(x0,lx),(x0,lx),(x0,lx),(x0,lx)]
-    y_list = [(y1,y1),(y2,y2),(y3,y3),(y4,y4)]
+    y2 = int(ly*0.2)
+    y3 = int(ly*0.3)
+    y4 = int(ly*0.4)
+    y5 = int(ly*0.5)
+    y6 = int(ly*0.6)
+    y7 = int(ly*0.7)
+    y8 = int(ly*0.8)
+    x_list = [(x0,lx),(x0,lx),(x0,lx),(x0,lx),(x0,lx),(x0,lx),(x0,lx)]
+    y_list = [(y2,y2),(y3,y3),(y4,y4),(y5,y5),(y6,y6),(y7,y7),(y8,y8)]
     return x_list, y_list
 
 # Get local adjacency
@@ -218,6 +221,56 @@ def is_valid_pixel(img, pixel):
             return True
     return False
 
+#--------------------------
+def find_csf(line_pts):
+    accum  = 0
+    window = [0 for i in range(5)]
+    maxval = 0
+    minval = sys.maxsize
+    csf_left, csf_right = None, None
+    for i in range(len(line_pts)//2):
+        v3 = (3, line_pts[i+3] - line_pts[i])
+        v2 = (2, line_pts[i+2] - line_pts[i])
+        v1 = (1, line_pts[i+1] - line_pts[i])
+        vr = (v3[0]+v2[0]+v1[0], v3[1]+v2[1]+v1[1])
+        r  = np.arctan(vr[1]/vr[0])
+        accum += r
+        if maxval > 1.0 and maxval not in window:
+            if accum < minval:
+                minval = accum
+        if accum > maxval:
+            if minval < maxval:
+                csf_left = i-1
+                break
+            maxval = accum
+        window.pop(0)
+        window.append(accum)
+        #print("x:", i, "r:", r, "s:", accum, "max:", maxval, "min:", minval)
+    accum  = 0
+    window = [0 for i in range(5)]
+    maxval = 0
+    minval = sys.maxsize
+    for i in range(len(line_pts)-1, len(line_pts)//2, -1):
+        v3 = (3, line_pts[i-3] - line_pts[i])
+        v2 = (2, line_pts[i-2] - line_pts[i])
+        v1 = (1, line_pts[i-1] - line_pts[i])
+        vr = (v3[0]+v2[0]+v1[0], v3[1]+v2[1]+v1[1])
+        r  = np.arctan(vr[1]/vr[0])
+        accum += r
+        if maxval > 1.0 and maxval not in window:
+            if accum < minval:
+                minval = accum
+        if accum > maxval:
+            if minval < maxval:
+                csf_right = i+1
+                break
+            maxval = accum
+        window.pop(0)
+        window.append(accum)
+        #print("x:", i, "r:", r, "s:", accum, "max:", maxval, "min:", minval)
+    return csf_left, csf_right
+
+
 
 def main():
     #load data
@@ -228,7 +281,7 @@ def main():
 
     #extract slice from an axis
     #for i in range(20, 220):
-    i=141
+    i=120
     slc = norm_img[:, i, :]
     cv2.imshow("teste", slc)
     cv2.imwrite("slice.png", slc)
@@ -236,15 +289,53 @@ def main():
     teste = np.zeros(slc.shape, dtype="uint8")
     teste = cv2.cvtColor(teste, cv2.COLOR_GRAY2BGR)
 
+    xl, yl = get_lines_horiz(teste)
+    ellipse_pts = []
+    seeds = []
+    for i in range(len(xl)):
+        #i=1
+        temp  = np.zeros(slc.shape, dtype="uint8")
+        cv2.line(temp, (xl[i][0],yl[i][0]), (xl[i][1],yl[i][1]), 255)
+        # cv2.line(teste, (xl[i][0],yl[i][0]), (xl[i][1],yl[i][1]), 255)
+        line = np.where(temp == 255)
+        pts  = list(zip(line[0], line[1]))
+        xlist= [i for i in range(len(pts))]
+        I    = [int(slc[p]) for p in pts]
+        left, right = find_csf(I)
+        print(left, right)
+        if left is not None:
+            slc[yl[i][0],left] = 255
+            ellipse_pts.append((left,yl[i][0]))
+            seeds.append((yl[i][0],left))
+        if right is not None:
+            slc[yl[i][0],right] = 255
+            ellipse_pts.append((right,yl[i][0]))
+            seeds.append((yl[i][0],right))
+
+    ellipse_pts = np.array(ellipse_pts)
+
+    # ellipse = cv2.fitEllipse(ellipse_pts)
+    # cv2.ellipse(teste, ellipse, 255, 1)
+    # cv2.imshow("teste", teste)
+    # cv2.waitKey(0)
+    # plt.plot(xlist, I)
+    # plt.show()
+    # sys.exit()
+
+
     G = Graph(teste)
     Q_fg = PriorityQueue()
     Q_bg = PriorityQueue()
     n_fg = Node((144,56), 0)
-    n_bg = Node((144,19), 0)
+    #n_bg = Node((144,19), 0)
+    for p in seeds:
+        n_bg = Node(p, 0)
+        G.add_node(n_bg)
+        Q_bg.put(n_bg, 0)
     G.add_node(n_fg)
-    G.add_node(n_bg)
+    #G.add_node(n_bg)
     Q_fg.put(n_fg, 0)
-    Q_bg.put(n_bg, 0)
+    #Q_bg.put(n_bg, 0)
     maxval = np.max(slc)
     neighborhood = get_neighborhood(4)
     temp_visited = set()
@@ -254,27 +345,27 @@ def main():
         bg = Q_bg.pop()
         G.add_visited(bg.pixel)
         ift_bg(slc, bg, neighborhood, G, Q_bg)
-        cont = cv2.cvtColor(teste, cv2.COLOR_BGR2GRAY)
-        ret, cont = cv2.threshold(cont, 20, 255, cv2.THRESH_BINARY)
-        contours = cv2.findContours(cont, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
+        # cont = cv2.cvtColor(teste, cv2.COLOR_BGR2GRAY)
+        #ret, cont = cv2.threshold(cont, 20, 255, cv2.THRESH_BINARY)
+        #contours = cv2.findContours(cont, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
         # epsilon = 0.01*cv2.arcLength(contours[0],True)
         # approx = cv2.approxPolyDP(contours[0],epsilon,True)
         cont = np.zeros(teste.shape, dtype="uint8")
         #cont = cv2.drawContours(cont, approx, -1, (0,255,0), 1)
-        if len(contours[0]) > 5:
-            ellipse = cv2.fitEllipse(contours[0])
-            cv2.ellipse(cont, ellipse, (0,255,0), 1)
+        # if len(contours[0]) > 5:
+        #     ellipse = cv2.fitEllipse(contours[0])
+        #     cv2.ellipse(cont, ellipse, (0,255,0), 1)
         cv2.imshow("growing", teste)
-        cv2.imshow("contours", cont)
+        #cv2.imshow("contours", cont)
         cv2.waitKey(1)
 
-    # G.visited = set()
-    # while not Q_fg.empty():
-    #     fg = Q_fg.pop()
-    #     G.add_visited(fg.pixel)
-    #     ift_fg(slc, fg, neighborhood, G, Q_fg)
-    #     cv2.imshow("growing", teste)
-    #     cv2.waitKey(1)
+    G.visited = set()
+    while not Q_fg.empty():
+        fg = Q_fg.pop()
+        G.add_visited(fg.pixel)
+        ift_fg(slc, fg, neighborhood, G, Q_fg)
+        cv2.imshow("growing", teste)
+        cv2.waitKey(1)
     cv2.imshow("growing", teste)
     cv2.waitKey(0)
 
