@@ -281,103 +281,131 @@ def main():
     norm_img = np.uint8(img_data[:,:,:]*255.0/max_val)
 
     #extract slice from an axis
-    #for i in range(20, 220):
-    i=120
-    slc = norm_img[:, i, :]
-    cv2.imshow("teste", slc)
-    cv2.imwrite("slice.png", slc)
-    cv2.waitKey(0)
-    teste = np.zeros(slc.shape, dtype="uint8")
-    teste = cv2.cvtColor(teste, cv2.COLOR_GRAY2BGR)
+    for i in range(20, 220):
+        #i=120
+        #slc = norm_img[:, i, :]
+        slc = norm_img[:, :, i]
+        slc[slc==0] = 255
+        cv2.imshow("teste", slc)
+        cv2.imwrite("slice.png", slc)
+        cv2.waitKey(0)
+        teste = np.zeros(slc.shape, dtype="uint8")
+        teste = cv2.cvtColor(teste, cv2.COLOR_GRAY2BGR)
 
-    ret, thresh = cv2.threshold(slc, 0, 255, cv2.THRESH_OTSU)
-    cv2.imshow("teste", thresh)
-    cv2.waitKey(0)
+        ret, thresh = cv2.threshold(slc, 0, 255, cv2.THRESH_OTSU)
+        # cv2.imshow("teste", thresh)
+        # cv2.waitKey(0)
 
-    xl, yl = get_lines_horiz(teste)
-    ellipse_pts = []
-    seeds = []
-    for i in range(len(xl)):
-        #i=1
-        temp  = np.zeros(slc.shape, dtype="uint8")
-        cv2.line(temp, (xl[i][0],yl[i][0]), (xl[i][1],yl[i][1]), 255)
-        # cv2.line(teste, (xl[i][0],yl[i][0]), (xl[i][1],yl[i][1]), 255)
-        line = np.where(temp == 255)
-        pts  = list(zip(line[0], line[1]))
-        xlist= [i for i in range(len(pts))]
-        I    = [int(slc[p]) for p in pts]
-        left, right = find_csf(I)
-        print(left, right)
-        if left is not None:
-            slc[yl[i][0],left] = 255
-            ellipse_pts.append((left,yl[i][0]))
-            seeds.append((yl[i][0],left))
-        if right is not None:
-            slc[yl[i][0],right] = 255
-            ellipse_pts.append((right,yl[i][0]))
-            seeds.append((yl[i][0],right))
+        eroded = morphology.opening(thresh, morphology.diamond(1))
+        eroded = skimage.img_as_ubyte(eroded)
+        # cv2.imshow("teste", eroded)
+        # cv2.waitKey(0)
 
-    ellipse_pts = np.array(ellipse_pts)
+        ret, label, stats, cent = cv2.connectedComponentsWithStats(eroded)
+        areas = stats[1:,cv2.CC_STAT_AREA]
+        arg = np.argmax(areas) + 1
+        label[label != arg] = 0
+        label[label == arg] = 1
+        label = np.uint8(label)
+        slc = cv2.multiply(slc, label)
+        # cv2.imshow("teste", slc)
+        # cv2.waitKey(0)
+    # for i in range(1, len(stats)):
+    #     width  = stats[i][cv2.CC_STAT_WIDTH]
+    #     height = stats[i][cv2.CC_STAT_HEIGHT]
+    #     area   = stats[i][cv2.CC_STAT_AREA]
+    #
+    #     print("i:", i, "area:", area)
+    #     temp = np.zeros(label.shape)
+    #     temp[label==i] = 255
+    #     temp[label!=i] = 0
+    #     cv2.imshow("teste", temp)
+    #     cv2.waitKey(0)
 
-    # ellipse = cv2.fitEllipse(ellipse_pts)
-    # cv2.ellipse(teste, ellipse, 255, 1)
-    # cv2.imshow("teste", teste)
+    # xl, yl = get_lines_horiz(teste)
+    # ellipse_pts = []
+    # seeds = []
+    # for i in range(len(xl)):
+    #     #i=1
+    #     temp  = np.zeros(slc.shape, dtype="uint8")
+    #     cv2.line(temp, (xl[i][0],yl[i][0]), (xl[i][1],yl[i][1]), 255)
+    #     # cv2.line(teste, (xl[i][0],yl[i][0]), (xl[i][1],yl[i][1]), 255)
+    #     line = np.where(temp == 255)
+    #     pts  = list(zip(line[0], line[1]))
+    #     xlist= [i for i in range(len(pts))]
+    #     I    = [int(slc[p]) for p in pts]
+    #     left, right = find_csf(I)
+    #     print(left, right)
+    #     if left is not None:
+    #         slc[yl[i][0],left] = 255
+    #         ellipse_pts.append((left,yl[i][0]))
+    #         seeds.append((yl[i][0],left))
+    #     if right is not None:
+    #         slc[yl[i][0],right] = 255
+    #         ellipse_pts.append((right,yl[i][0]))
+    #         seeds.append((yl[i][0],right))
+    #
+    # ellipse_pts = np.array(ellipse_pts)
+    #
+    # # ellipse = cv2.fitEllipse(ellipse_pts)
+    # # cv2.ellipse(teste, ellipse, 255, 1)
+    # # cv2.imshow("teste", teste)
+    # # cv2.waitKey(0)
+    # # plt.plot(xlist, I)
+    # # plt.show()
+    # # sys.exit()
+    #
+    #
+    # G = Graph(teste)
+    # Q_fg = PriorityQueue()
+    # Q_bg = PriorityQueue()
+    # n_fg = Node((144,56), 0)
+    # #n_bg = Node((144,19), 0)
+    # for p in seeds:
+    #     n_bg = Node(p, 0)
+    #     G.add_node(n_bg)
+    #     Q_bg.put(n_bg, 0)
+    # G.add_node(n_fg)
+    # #G.add_node(n_bg)
+    # Q_fg.put(n_fg, 0)
+    # #Q_bg.put(n_bg, 0)
+    # maxval = np.max(slc)
+    # neighborhood = get_neighborhood(4)
+    # temp_visited = set()
+    # previous_area = 0
+    #
+    # while not Q_bg.empty():
+    #     bg = Q_bg.pop()
+    #     G.add_visited(bg.pixel)
+    #     ift_bg(slc, bg, neighborhood, G, Q_bg)
+    #     # cont = cv2.cvtColor(teste, cv2.COLOR_BGR2GRAY)
+    #     #ret, cont = cv2.threshold(cont, 20, 255, cv2.THRESH_BINARY)
+    #     #contours = cv2.findContours(cont, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
+    #     # epsilon = 0.01*cv2.arcLength(contours[0],True)
+    #     # approx = cv2.approxPolyDP(contours[0],epsilon,True)
+    #     cont = np.zeros(teste.shape, dtype="uint8")
+    #     #cont = cv2.drawContours(cont, approx, -1, (0,255,0), 1)
+    #     # if len(contours[0]) > 5:
+    #     #     ellipse = cv2.fitEllipse(contours[0])
+    #     #     cv2.ellipse(cont, ellipse, (0,255,0), 1)
+    #     cv2.imshow("growing", teste)
+    #     #cv2.imshow("contours", cont)
+    #     cv2.waitKey(1)
+    #
+    # G.visited = set()
+    # while not Q_fg.empty():
+    #     fg = Q_fg.pop()
+    #     G.add_visited(fg.pixel)
+    #     ift_fg(slc, fg, neighborhood, G, Q_fg)
+    #     cv2.imshow("growing", teste)
+    #     cv2.waitKey(1)
+    # cv2.imshow("growing", teste)
     # cv2.waitKey(0)
-    # plt.plot(xlist, I)
-    # plt.show()
-    # sys.exit()
-
-
-    G = Graph(teste)
-    Q_fg = PriorityQueue()
-    Q_bg = PriorityQueue()
-    n_fg = Node((144,56), 0)
-    #n_bg = Node((144,19), 0)
-    for p in seeds:
-        n_bg = Node(p, 0)
-        G.add_node(n_bg)
-        Q_bg.put(n_bg, 0)
-    G.add_node(n_fg)
-    #G.add_node(n_bg)
-    Q_fg.put(n_fg, 0)
-    #Q_bg.put(n_bg, 0)
-    maxval = np.max(slc)
-    neighborhood = get_neighborhood(4)
-    temp_visited = set()
-    previous_area = 0
-
-    while not Q_bg.empty():
-        bg = Q_bg.pop()
-        G.add_visited(bg.pixel)
-        ift_bg(slc, bg, neighborhood, G, Q_bg)
-        # cont = cv2.cvtColor(teste, cv2.COLOR_BGR2GRAY)
-        #ret, cont = cv2.threshold(cont, 20, 255, cv2.THRESH_BINARY)
-        #contours = cv2.findContours(cont, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
-        # epsilon = 0.01*cv2.arcLength(contours[0],True)
-        # approx = cv2.approxPolyDP(contours[0],epsilon,True)
-        cont = np.zeros(teste.shape, dtype="uint8")
-        #cont = cv2.drawContours(cont, approx, -1, (0,255,0), 1)
-        # if len(contours[0]) > 5:
-        #     ellipse = cv2.fitEllipse(contours[0])
-        #     cv2.ellipse(cont, ellipse, (0,255,0), 1)
-        cv2.imshow("growing", teste)
-        #cv2.imshow("contours", cont)
-        cv2.waitKey(1)
-
-    G.visited = set()
-    while not Q_fg.empty():
-        fg = Q_fg.pop()
-        G.add_visited(fg.pixel)
-        ift_fg(slc, fg, neighborhood, G, Q_fg)
-        cv2.imshow("growing", teste)
-        cv2.waitKey(1)
-    cv2.imshow("growing", teste)
-    cv2.waitKey(0)
-
-
-
-
-    print("finished")
+    #
+    #
+    #
+    #
+    # print("finished")
 
 
 
