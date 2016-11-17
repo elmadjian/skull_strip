@@ -308,6 +308,8 @@ def main():
         label[label == arg] = 1
         label = np.uint8(label)
         slc = cv2.multiply(slc, label)
+
+        #---------------------------------------------------
         # cv2.imshow("teste", slc)
         # cv2.waitKey(0)
     # for i in range(1, len(stats)):
