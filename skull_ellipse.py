@@ -192,7 +192,9 @@ def ift_bg(img, current, neighborhood, G, Q):
         #     print("c:", current.pixel, "n:", n_pixel, "distance_c:", current.distance, "distance_n:", G.node[n_pixel].distance)
         if not G.is_visited(n_pixel):
             n = Node(n_pixel) if not G.has_node(n_pixel) else G.get_node(n_pixel)
-            cost = np.log(int(img[n_pixel])/20.0) * 180
+            cost = current.cost
+            if img[n_pixel] < img[current.pixel]:
+                cost = np.log(int(img[n_pixel])/20.0 + 1) * 32
             if cost < n.cost:
                 n.cost = cost
                 n.distance = current.distance + 1
@@ -360,17 +362,17 @@ def main():
         # if len(contours[0]) > 5:
         #     ellipse = cv2.fitEllipse(contours[0])
         #     cv2.ellipse(cont, ellipse, (0,255,0), 1)
-        cv2.imshow("growing", teste)
+
         #cv2.imshow("contours", cont)
-        cv2.waitKey(1)
+
+    cv2.imshow("growing", teste)
+    cv2.waitKey(0)
 
     G.visited = set()
     while not Q_fg.empty():
         fg = Q_fg.pop()
         G.add_visited(fg.pixel)
         ift_fg(slc, fg, neighborhood, G, Q_fg)
-        cv2.imshow("growing", teste)
-        cv2.waitKey(1)
     cv2.imshow("growing", teste)
     cv2.waitKey(0)
 

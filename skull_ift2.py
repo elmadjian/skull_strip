@@ -4,6 +4,7 @@ import nibabel as nib
 import skimage
 import matplotlib.pyplot as plt
 import graph
+from skimage import morphology
 
 
 
@@ -86,32 +87,37 @@ def main():
     conquest = np.zeros(norm_img.shape, dtype="uint8")
 
     #extract slice from an axis
-    for i in range(150, 220):
-        #i=181
-        slc = norm_img[i, :, :]
-        slcc = conquest[i, :, :]
-        cv2.imshow("teste", slc)
-        cv2.imwrite("slice.png", slc)
-        cv2.waitKey(0)
+    #for i in range(150, 220):
+    i=121
+    slc = norm_img[:, i, :]
+    slcc = conquest[:, i, :]
+    cv2.imshow("teste", slc)
+    cv2.waitKey(0)
 
-        Q = graph.PriorityQueue()
-        n = (144,56)
-        Q.put(n, 0)
-        neighborhood = get_neighborhood(4)
-        window = get_neighborhood(24)
-        predecessor = {}
-        cost = initialize_costs(slc, window)
-        cost[n] = 1
+    slc = morphology.erosion(slc, morphology.disk(1))#, morphology.ball(5))
+    slc = skimage.img_as_ubyte(slc)
+    cv2.imshow("teste2", slc)
+    cv2.waitKey(0)
 
-        while not Q.is_empty():
-            lowest = Q.pop()
-            slcc[lowest] = 255
-            ift(slc, lowest, neighborhood, slcc, Q, cost, predecessor)
-            # cv2.imshow("teste2", slcc)
-            # cv2.waitKey(1)
 
-        cv2.imshow("teste2", slcc)
-        cv2.waitKey(0)
+    Q = graph.PriorityQueue()
+    n = (144,56)
+    Q.put(n, 0)
+    neighborhood = get_neighborhood(4)
+    window = get_neighborhood(24)
+    predecessor = {}
+    cost = initialize_costs(slc, window)
+    cost[n] = 1
+
+    while not Q.is_empty():
+        lowest = Q.pop()
+        slcc[lowest] = 255
+        ift(slc, lowest, neighborhood, slcc, Q, cost, predecessor)
+        # cv2.imshow("teste2", slcc)
+        # cv2.waitKey(1)
+
+    cv2.imshow("teste2", slcc)
+    cv2.waitKey(0)
 
 
     print("finished")
