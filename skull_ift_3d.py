@@ -34,25 +34,10 @@ def is_valid_pixel(img, pixel):
                 return True
     return False
 
-#Image-Foresting Transform - Background
-#--------------------------------------
-def ift_bg(img, current, neighborhood, conquest, Q, cost_dic):#, predecessor):
-    for i in neighborhood:
-        pixel = (current[0] + i[0], current[1] + i[1], current[2] + i[2])
-        if not is_valid_pixel(img, pixel):
-            continue
-        if conquest[pixel] != 255:
-            cost = cost_dic[current]
-            if img[pixel] < img[current]:
-                cost = np.log(int(img[pixel])/20.0 + 1) * 32
-            if cost < cost_dic[pixel]:
-                cost_dic[pixel] = cost
-                #predecessor[pixel] = current
-                Q.put(pixel, cost)
 
 #Image-Foresting Transform - Foreground
 #--------------------------------------
-def ift_fg(img, current, neighborhood, conquest, Q, cost_dic):#, predecessor):
+def ift_fg(img, current, neighborhood, conquest, Q, cost_dic)
     for i in neighborhood:
         pixel = (current[0] + i[0], current[1] + i[1], current[2] + i[2])
         if not is_valid_pixel(img, pixel):
@@ -70,22 +55,8 @@ def initialize_costs(img):#, neighborhood):
     for y in range(img.shape[0]):
         for x in range(img.shape[1]):
             for z in range(img.shape[2]):
-                cost[(y,x,z)] = np.log(int(img[(y,x,z)])/20.0 + 1) * 25#calc_cost(img, (y,x,z), neighborhood)
+                cost[(y,x,z)] = np.log(int(img[(y,x,z)])/20.0 + 1) * 25
     return cost
-
-#Calculates the cost at a specific pixel/voxel
-#---------------------------------------------
-def calc_cost(img, point, neighborhood):
-    if img[point] == 0:
-        return 0
-    points = [(point[0] + i[0], point[1] + i[1], point[2] + i[2]) for i in neighborhood]
-    I = []
-    for p in points:
-        if is_valid_pixel(img, p):
-            I.append(img[p])
-    mean = np.mean(I)
-    stdd = np.std(I)
-    return 1/(3 * stdd + 1) - 1/(mean + 1)
 
 
 # Post-process to extract brain unrelated parts
@@ -105,9 +76,7 @@ def post_process(img, thresh):
 # Find starting point
 #--------------------
 def get_init_point(img):
-    y = img.shape[0]
-    x = img.shape[1]
-    z = img.shape[2]
+    y, x, z = img.shape[0], img.shape[1], img.shape[2]
     yd = [[0, y//3], [y//3, (y//3)*2], [(y//3)*2, y]]
     xd = [[0, x//3], [x//3, (x//3)*2], [(x//3)*2, x]]
     zd = [[0, z//3], [z//3, (z//3)*2], [(z//3)*2, z]]
@@ -140,7 +109,6 @@ def main():
     norm_img = np.uint8(img_data[:,:,:]*255.0/max_val)
     conquest = np.zeros(norm_img.shape, dtype="uint8")
 
-    #grow ift 3D
     Q_fg = graph.PriorityQueue()
     n_fg = get_init_point(norm_img)
     Q_fg.put(n_fg, 0)
@@ -169,7 +137,6 @@ def main():
     processed = nib.Nifti1Image(img_data, np.eye(4))
     nib.save(processed, "test_6.nii.gz")
     nib.save(new_img, "test_label_6.nii.gz")
-
 
 
 if __name__=="__main__":
