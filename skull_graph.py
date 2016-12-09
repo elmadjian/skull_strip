@@ -24,7 +24,7 @@ def main():
                           [1, 1, 1]])
     weights = slc.copy()
     g.add_grid_edges(node_ids, 1, structure=structure, symmetric=True)
-    g.add_grid_tedges(node_ids, 255-slc, slc)
+    g.add_grid_tedges(node_ids, 200-slc, slc)
     g.maxflow()
 
     sgm = g.get_grid_segments(node_ids)

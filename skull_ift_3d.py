@@ -37,7 +37,7 @@ def is_valid_pixel(img, pixel):
 
 #Image-Foresting Transform - Foreground
 #--------------------------------------
-def ift_fg(img, current, neighborhood, conquest, Q, cost_dic)
+def ift_fg(img, current, neighborhood, conquest, Q, cost_dic):
     for i in neighborhood:
         pixel = (current[0] + i[0], current[1] + i[1], current[2] + i[2])
         if not is_valid_pixel(img, pixel):
@@ -47,16 +47,6 @@ def ift_fg(img, current, neighborhood, conquest, Q, cost_dic)
             if cost < cost_dic[pixel]:
                 cost_dic[pixel] = cost
                 Q.put(pixel, cost)
-
-#Initialize all pixels with a specific cost rule
-#------------------------------------------------
-def initialize_costs(img):#, neighborhood):
-    cost = {}
-    for y in range(img.shape[0]):
-        for x in range(img.shape[1]):
-            for z in range(img.shape[2]):
-                cost[(y,x,z)] = np.log(int(img[(y,x,z)])/20.0 + 1) * 25
-    return cost
 
 
 # Post-process to extract brain unrelated parts
@@ -93,9 +83,9 @@ def get_init_point(img):
         if mean > highest_mean:
             highest_mean = mean
             argmax = (y,x,z)
-        y = int(coord[i][0][0] + (coord[i][0][1]-coord[i][0][0])/1.6)
-        x = int(coord[i][1][0] + (coord[i][1][1]-coord[i][1][0])/1.6)
-        z = int(coord[i][2][0] + (coord[i][2][1]-coord[i][2][0])/1.6)
+        y = int(coord[i][0][0] + (coord[i][0][1]-coord[i][0][0])/1.2)
+        x = int(coord[i][1][0] + (coord[i][1][1]-coord[i][1][0])/1.2)
+        z = int(coord[i][2][0] + (coord[i][2][1]-coord[i][2][0])/1.2)
     return argmax
 
 
@@ -103,7 +93,7 @@ def get_init_point(img):
 #-------------------
 def main():
     #load data
-    img3D    = nib.load("../6.nii.gz")
+    img3D    = nib.load("../8.nii.gz")
     img_data = img3D.get_data()
     max_val  = img_data[:,:,:].max()
     norm_img = np.uint8(img_data[:,:,:]*255.0/max_val)
@@ -135,8 +125,8 @@ def main():
     print("saving label...")
     new_img = nib.Nifti1Image(rebuilt, np.eye(4))
     processed = nib.Nifti1Image(img_data, np.eye(4))
-    nib.save(processed, "test_6.nii.gz")
-    nib.save(new_img, "test_label_6.nii.gz")
+    nib.save(processed, "test_8.nii.gz")
+    nib.save(new_img, "test_label_8.nii.gz")
 
 
 if __name__=="__main__":

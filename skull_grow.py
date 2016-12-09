@@ -75,7 +75,7 @@ def circle_levelset(shape, center, sqradius, scalerow=1.0):
 #-------------------------------------
 def main():
     #load data
-    img3D    = nib.load("../1.nii.gz")
+    img3D    = nib.load("../3.nii.gz")
     img_data = img3D.get_data()
     max_val  = img_data[:,:,:].max()
     norm_img = np.uint8(img_data[:,:,:]*255.0/max_val)
@@ -86,33 +86,39 @@ def main():
     macwe.run(150)
     result = macwe.levelset
 
-    for i in range(0, 240):
-        slc = result[i,:,:]
-        cv2.imshow("teste", slc)
-        cv2.waitKey(0)
-        #cv2.imwrite("slc_ini_" + str(i) + ".jpg", slc)
+    print("saving label...")
+    new_img = nib.Nifti1Image(result, np.eye(4))
+    processed = nib.Nifti1Image(img_data, np.eye(4))
+    #nib.save(processed, "test_8.nii.gz")
+    nib.save(new_img, "test_label_3_morph.nii.gz")
 
-        slc = result[:,i,:]
-        cv2.imshow("teste2", slc)
-        cv2.waitKey(0)
-        #cv2.imwrite("slc_meio_" + str(i) + ".jpg", slc)
-
-        if i < 180:
-            slc = result[:,:,i]
-            cv2.imshow("teste3", slc)
-            cv2.waitKey(0)
-            #cv2.imwrite("slc_fim_" + str(i) + ".jpg", slc)
-
-        print("fatia:", i)
+    # for i in range(0, 240):
+    #     slc = result[i,:,:]
+    #     cv2.imshow("teste", slc)
+    #     cv2.waitKey(0)
+    #     #cv2.imwrite("slc_ini_" + str(i) + ".jpg", slc)
+    #
+    #     slc = result[:,i,:]
+    #     cv2.imshow("teste2", slc)
+    #     cv2.waitKey(0)
+    #     #cv2.imwrite("slc_meio_" + str(i) + ".jpg", slc)
+    #
+    #     if i < 180:
+    #         slc = result[:,:,i]
+    #         cv2.imshow("teste3", slc)
+    #         cv2.waitKey(0)
+    #         #cv2.imwrite("slc_fim_" + str(i) + ".jpg", slc)
+    #
+    #     print("fatia:", i)
 
 
     #-------------------------
     #extract slice from an axis
-    # for i in range(181, 220):
-    #     slc = norm_img[i, :, :]
-    #
-    #     cv2.imshow("teste", slc)
-    #     cv2.waitKey(0)
+    for i in range(181, 220):
+        slc = norm_img[:, i, :]
+
+        cv2.imshow("teste", slc)
+        cv2.waitKey(0)
     #
     #     seed = (197,46)
     #     stack = [seed]
@@ -135,12 +141,12 @@ def main():
     #     cv2.imshow("teste2", slc)
     #     cv2.waitKey(0)
     #
-    #     macwe = morphsnakes.MorphACWE(slc, smoothing=1, lambda1=10, lambda2=30)
-    #     macwe.levelset = circle_levelset(slc.shape, (135, 95), 50)
-    #     levelset = morphsnakes.evolve_visual(macwe, num_iters=150, background=slc)
-        #macwe.run(150)
-        # cv2.imshow("teste", macwe.levelset)
-        # cv2.waitKey(0)
+        macwe = morphsnakes.MorphACWE(slc, smoothing=1, lambda1=10, lambda2=30)
+        macwe.levelset = circle_levelset(slc.shape, (135, 95), 50)
+        levelset = morphsnakes.evolve_visual(macwe, num_iters=150, background=slc)
+        macwe.run(150)
+        cv2.imshow("teste", macwe.levelset)
+        cv2.waitKey(0)
 
         # seed = (slc.shape[0]//2, slc.shape[1]//2)
         # stack = [seed]

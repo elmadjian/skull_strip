@@ -19,21 +19,26 @@ def main():
     label = np.zeros(slc.shape, np.int)
 
     cv2.imshow("teste", slc)
-    cv2.imwrite("slice.png", slc)
+    cv2.imwrite("random1.png", slc)
     cv2.waitKey(0)
 
     label[slc==0] = -1
-    label[slc<10] = 1
-    label[slc>75] = 2
+    label[slc<10] = 100
+    label[slc==100] = 200
     # label[126,154] = 1
     # label[125,100] = 2
     # label[208,121] = 1
     # label[185,111] = 2
 
+    cv2.imshow("teste3", np.uint8(label))
+    cv2.imwrite("random2.png", np.uint8(label))
+    cv2.waitKey(0)
+
     result = random_walker(slc, label, beta=1000)
     result = skimage.img_as_ubyte(result)
     result = np.uint8(result*255.0/np.max(result))
     cv2.imshow("teste2", result)
+    cv2.imwrite("random3.png", result)
     cv2.waitKey(0)
 
     # half = slc.shape[0]//1.5
