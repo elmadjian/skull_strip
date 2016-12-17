@@ -5,11 +5,11 @@ from skimage import morphology
 
 # Global parameters
 #~~~~~~~~~~~~~~~~~~
-alpha   = 50    #controls the boundary between bg and fg (higher = larger fg)(20-30)
-erosion = 2     #erosion parameter to disconnect the brain (2-3)
-dilat   = 5     #dilation parameter to rebuild the segmented brain (4-6)
-closing = 4     #closing parameter of brain holes
-cut     = 6     #cut parameter for brainstem
+alpha   = 23  #controls the boundary between bg and fg (higher = larger fg)(15-50)
+erosion = 2   #erosion parameter to disconnect the brain (2-3)
+dilat   = 5   #dilation parameter to rebuild the segmented brain (4-6)
+closing = 4   #closing parameter of brain holes
+cut     = 6   #cut parameter for brainstem
 
 
 # Get local adjacency
@@ -88,9 +88,9 @@ def get_init_point(img):
         if mean > highest_mean and std_ratio < 0.6:
             highest_mean = mean
             argmax = (y,x,z)
-        y = int(coord[i][0][0] + (coord[i][0][1]-coord[i][0][0])/1.15)
-        x = int(coord[i][1][0] + (coord[i][1][1]-coord[i][1][0])/1.15)
-        z = int(coord[i][2][0] + (coord[i][2][1]-coord[i][2][0])/1.15)
+        y = int(coord[i][0][0] + (coord[i][0][1]-coord[i][0][0])/2.5)
+        x = int(coord[i][1][0] + (coord[i][1][1]-coord[i][1][0])/2.5)
+        z = int(coord[i][2][0] + (coord[i][2][1]-coord[i][2][0])/2.5)
     return argmax
 
 
