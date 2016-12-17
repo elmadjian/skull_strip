@@ -1,11 +1,15 @@
-import cv2, sys, bisect
+import cv2, sys, pq
 import numpy as np
 import nibabel as nib
-import skimage
-import matplotlib.pyplot as plt
-import graph
 from skimage import morphology
 
+# Global parameters
+#~~~~~~~~~~~~~~~~~~
+alpha   = 31    #controls the boundary between background and foreground
+erosion = 2     #erosion parameter to disconnect the brain
+dilat   = 5     #dilation parameter to rebuild the segmented brain
+closing = 4     #closing parameter of brain holes
+cut     = 6     #cut parameter for brainstem
 
 
 # Get local adjacency
@@ -89,44 +93,53 @@ def get_init_point(img):
     return argmax
 
 
+#opens a 3D image
+#----------------
+def open_file(sys_input):
+    if len(sys_input) != 3:
+        print("usage: <this_program> <3D_image> <3D_labelname>")
+        sys.exit()
+    return nib.load(sys_input[1])
+
+
+
 #skull strip program
 #-------------------
 def main():
     #load data
-    img3D    = nib.load("../8.nii.gz")
+    img3D    = open_file(sys.argv)
     img_data = img3D.get_data()
     max_val  = img_data[:,:,:].max()
     norm_img = np.uint8(img_data[:,:,:]*255.0/max_val)
     conquest = np.zeros(norm_img.shape, dtype="uint8")
 
-    Q_fg = graph.PriorityQueue()
+    Q_fg = pq.PriorityQueue()
     n_fg = get_init_point(norm_img)
     Q_fg.put(n_fg, 0)
     neighborhood = get_neighborhood(6)
 
     print("applying 3D erosion...")
-    norm_img = morphology.erosion(norm_img, morphology.ball(2))
+    norm_img = morphology.erosion(norm_img, morphology.ball(erosion))
 
     print("initializing costs...")
     cost = norm_img.astype("float32")
-    cost = np.log(cost/20.0 + 1) * 30
+    cost = np.log(cost/20.0 + 1) * alpha
     cost[n_fg] = 1
 
-    print("processing foreground...")
+    print("processing voxel expansion...")
     while not Q_fg.is_empty():
         lowest = Q_fg.pop()
         conquest[lowest] = 255
         ift_fg(norm_img, lowest, neighborhood, conquest, Q_fg, cost)
 
     print("applying post-processing...")
-    rebuilt = morphology.dilation(conquest, morphology.ball(4))
-    post_process(rebuilt, 6)
+    rebuilt = morphology.dilation(conquest, morphology.ball(dilat))
+    rebuilt = morphology.closing(rebuilt, morphology.ball(closing))
+    post_process(rebuilt, cut)
 
     print("saving label...")
     new_img = nib.Nifti1Image(rebuilt, np.eye(4))
-    processed = nib.Nifti1Image(img_data, np.eye(4))
-    nib.save(processed, "test_8.nii.gz")
-    nib.save(new_img, "test_label_8.nii.gz")
+    nib.save(new_img, sys.argv[2])
 
 
 if __name__=="__main__":
