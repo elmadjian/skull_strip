@@ -1,13 +1,13 @@
-import cv2, sys, pq
+import sys, pq
 import numpy as np
 import nibabel as nib
 from skimage import morphology
 
 # Global parameters
 #~~~~~~~~~~~~~~~~~~
-alpha   = 31    #controls the boundary between background and foreground
-erosion = 2     #erosion parameter to disconnect the brain
-dilat   = 5     #dilation parameter to rebuild the segmented brain
+alpha   = 50    #controls the boundary between bg and fg (higher = larger fg)(20-30)
+erosion = 2     #erosion parameter to disconnect the brain (2-3)
+dilat   = 5     #dilation parameter to rebuild the segmented brain (4-6)
 closing = 4     #closing parameter of brain holes
 cut     = 6     #cut parameter for brainstem
 
@@ -39,7 +39,7 @@ def is_valid_pixel(img, pixel):
     return False
 
 
-#Image-Foresting Transform - Foreground
+#Image Foresting Transform - Foreground
 #--------------------------------------
 def ift_fg(img, current, neighborhood, conquest, Q, cost_dic):
     for i in neighborhood:
@@ -71,9 +71,9 @@ def post_process(img, thresh):
 #--------------------
 def get_init_point(img):
     y, x, z = img.shape[0], img.shape[1], img.shape[2]
-    yd = [[0, y//3], [y//3, (y//3)*2], [(y//3)*2, y]]
-    xd = [[0, x//3], [x//3, (x//3)*2], [(x//3)*2, x]]
-    zd = [[0, z//3], [z//3, (z//3)*2], [(z//3)*2, z]]
+    yd = [[0, y//4], [y//4, (y//4)*2], [(y//4)*2, (y//4)*3], [(y//4)*3, y]]
+    xd = [[0, x//4], [x//4, (x//4)*2], [(x//4)*2, (x//4)*3], [(x//4)*3, x]]
+    zd = [[0, z//4], [z//4, (z//4)*2], [(z//4)*2, (z//4)*3], [(z//4)*3, z]]
     cubes, coord = [], []
     for iy in yd:
         for ix in xd:
@@ -84,12 +84,13 @@ def get_init_point(img):
     argmax, highest_mean = -1, -1
     for i in range(len(cubes)):
         mean = np.mean(cubes[i])
-        if mean > highest_mean:
+        std_ratio = np.std(cubes[i])/mean
+        if mean > highest_mean and std_ratio < 0.6:
             highest_mean = mean
             argmax = (y,x,z)
-        y = int(coord[i][0][0] + (coord[i][0][1]-coord[i][0][0])/1.2)
-        x = int(coord[i][1][0] + (coord[i][1][1]-coord[i][1][0])/1.2)
-        z = int(coord[i][2][0] + (coord[i][2][1]-coord[i][2][0])/1.2)
+        y = int(coord[i][0][0] + (coord[i][0][1]-coord[i][0][0])/1.15)
+        x = int(coord[i][1][0] + (coord[i][1][1]-coord[i][1][0])/1.15)
+        z = int(coord[i][2][0] + (coord[i][2][1]-coord[i][2][0])/1.15)
     return argmax
 
 
@@ -106,7 +107,6 @@ def open_file(sys_input):
 #skull strip program
 #-------------------
 def main():
-    #load data
     img3D    = open_file(sys.argv)
     img_data = img3D.get_data()
     max_val  = img_data[:,:,:].max()
@@ -119,7 +119,7 @@ def main():
     neighborhood = get_neighborhood(6)
 
     print("applying 3D erosion...")
-    norm_img = morphology.erosion(norm_img, morphology.ball(erosion))
+    erod_img = morphology.erosion(norm_img, morphology.ball(erosion))
 
     print("initializing costs...")
     cost = norm_img.astype("float32")
@@ -130,7 +130,7 @@ def main():
     while not Q_fg.is_empty():
         lowest = Q_fg.pop()
         conquest[lowest] = 255
-        ift_fg(norm_img, lowest, neighborhood, conquest, Q_fg, cost)
+        ift_fg(erod_img, lowest, neighborhood, conquest, Q_fg, cost)
 
     print("applying post-processing...")
     rebuilt = morphology.dilation(conquest, morphology.ball(dilat))

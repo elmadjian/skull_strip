@@ -23,12 +23,8 @@ def main():
     cv2.waitKey(0)
 
     label[slc==0] = -1
-    label[slc<10] = 100
-    label[slc==100] = 200
-    # label[126,154] = 1
-    # label[125,100] = 2
-    # label[208,121] = 1
-    # label[185,111] = 2
+    label[slc<10] = 60
+    label[slc>90] = 200
 
     cv2.imshow("teste3", np.uint8(label))
     cv2.imwrite("random2.png", np.uint8(label))
@@ -41,50 +37,6 @@ def main():
     cv2.imwrite("random3.png", result)
     cv2.waitKey(0)
 
-    # half = slc.shape[0]//1.5
-    # x_list = []
-    # y_list = []
-    # previous = 0
-    # for i in range(slc.shape[1]):
-    #     x_list.append(i)
-    #     y_list.append(slc[half,i])
-    #     previous = int(slc[half,i])
-    #     slc[half,i] = 255
-    #
-    # cv2.imshow("teste", slc)
-    # cv2.waitKey(0)
-    # plt.plot(x_list, y_list)
-    # plt.show()
-
-
-    # ret, thresh = cv2.threshold(slc, 0, 255, cv2.THRESH_OTSU)
-    # ret, label, stats, cent = cv2.connectedComponentsWithStats(thresh)
-    # area = [stats[i][-1] for i in range(1, len(stats))]
-    # maxv = np.argmax(area)+1
-    # thresh[label!=maxv] = 0
-    # cv2.imshow("teste", thresh)
-    # cv2.waitKey(0)
-
-    # slice1 = np.uint16(slice1*65535.0/np.max(slice1))
-    # slice2 = np.uint16(slice2*65535.0/np.max(slice2))
-    # slice3 = np.uint16(slice3*65535.0/np.max(slice3))
-    #
-    # cv2.imshow("teste", slice1)
-    # cv2.waitKey(0)
-    #
-    # cv2.imshow("teste", slice2)
-    # cv2.waitKey(0)
-    #
-    # cv2.imshow("teste", slice3)
-    # cv2.waitKey(0)
-
-
-    #watch the movie:)
-    # for i in range(img_data.shape[1]):
-    #     slc = img_data[:, i, :]
-    #     slc = np.uint8(slc*255.0/slc.max())
-    #     cv2.imshow("teste", slc)
-    #     cv2.waitKey(50)
 
 
 if __name__=="__main__":
